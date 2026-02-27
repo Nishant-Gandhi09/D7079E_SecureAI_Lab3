@@ -120,7 +120,7 @@ class ModelSimulation():
         m.train(train_data, validation_data)     
         m.test(test_data) 
         
-        m.plot_all(test_data, xlabel="CNN Model", title="CNN Model")
+        m.plot_all(test_data, xlabel="Epoch", title="CNN Model")
         input('Press Enter to close plots and exit...')
         
 class FederatedSimulation():

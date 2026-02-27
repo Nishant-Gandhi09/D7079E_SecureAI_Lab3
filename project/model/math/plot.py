@@ -11,12 +11,13 @@ class ModelPlot:
         # Create a figure with two subplots: one for accuracy and one for loss
         plt.figure(num=title, figsize=(14, 5))
 
+        x = list(range(1, len(train_accuracy) + 1))
+
         # Plot training and validation accuracy
         plt.subplot(2, 3, 4)
-        plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))   # Force integers on x-axis
-        plt.plot(train_accuracy, label='Training Accuracy', color='blue')
-        plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))   # Force integers on x-axis
-        plt.plot(val_accuracy, label='Validation Accuracy', color='orange')
+        plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
+        plt.plot(x, train_accuracy, label='Training Accuracy', color='blue')
+        plt.plot(x, val_accuracy, label='Validation Accuracy', color='orange')
         plt.xlabel(xlabel)
         plt.ylabel('Accuracy')
         plt.title('Training and Validation Accuracy ' + title)
@@ -24,10 +25,9 @@ class ModelPlot:
 
         # Plot training and validation loss
         plt.subplot(2, 3, 5)
-        plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))   # Force integers on x-axis
-        plt.plot(train_loss, label='Training Loss', color='blue')
-        plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))   # Force integers on x-axis
-        plt.plot(val_loss, label='Validation Loss', color='orange')
+        plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
+        plt.plot(x, train_loss, label='Training Loss', color='blue')
+        plt.plot(x, val_loss, label='Validation Loss', color='orange')
         plt.xlabel(xlabel)
         plt.ylabel('Loss')
         plt.title('Training and Validation Loss ' + title)
@@ -46,11 +46,9 @@ class ModelPlot:
         # Plot test
         plt.subplot(2, 3, 1)
         
-        test_rounds = []
-        for i in range(len(accuracy)):
-            test_rounds.append(i)
-        
-        plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))   # Force integers on x-axis
+        test_rounds = list(range(1, len(accuracy) + 1))
+
+        plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
         plt.plot(test_rounds, accuracy, label='Test Accuracy', color='blue')
         plt.xlabel(xlabel)
         plt.ylabel('Accuracy')
@@ -58,7 +56,7 @@ class ModelPlot:
         plt.legend()
 
         plt.subplot(2, 3, 2)
-        plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))   # Force integers on x-axis
+        plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
         plt.plot(test_rounds, loss, label='Test Loss', color='blue')
         
         plt.xlabel(xlabel)
