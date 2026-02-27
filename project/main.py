@@ -236,6 +236,177 @@ class FederatedSimulation():
         
         return federated.run()
     
+class PreTrainingSimulation():
+    """
+    Phase 1: Pre-train all models on all ID data for 35 rounds.
+    OOD detection is disabled. Models are saved after each round to disk.
+    Run this FIRST before any experiment.
+    """
+    SAVE_PATH = "./.env/.saved/"
+    ROUNDS    = 35
+
+    federated_config = ConfigFederated(
+        debug          = True,
+        save           = True,                       # Save weights after every round
+        load_round     = 0,
+        load_reg       = True,
+        load           = False,
+        delete_on_load = False,
+        path           = "./.env/.saved/",
+        rounds         = ROUNDS,
+        ood_round      = ROUNDS + 1,                 # OOD never triggered
+        clients        = 5,                          # global(0) + 4 local
+        participants   = 4,
+        host_id        = 0,
+        client_to_dataset = [[0,1,2,3],[0],[1],[2],[3]]
+    )
+    ood_config = ConfigOod(
+        debug               = False,
+        hdc_debug           = False,
+        enabled             = False,                 # OOD disabled during pre-training
+        hyper_size          = int(1e4),
+        id_client           = [1,2,3,4],
+        ood_client          = [],
+        ood_protection      = False,
+        ood_protection_thres= 0.7
+    )
+    model_config = ConfigModel(
+        debug          = False,
+        epochs         = 1,
+        activation     = 'relu',
+        activation_out = 'softmax',
+        optimizer      = 'adam',
+        loss           = 'categorical_crossentropy'
+    )
+    dataset_config = ConfigDataset(
+        debug           = False,
+        batch_size      = 64,
+        image_size      = 256,
+        input_shape     = (256,256,1),
+        split           = 0.25,
+        number_of_classes = 2
+    )
+    plot_config = ConfigPlot(plot=False, path='./.env/plot', img_per_class=10)
+
+    def run(self):
+        m = Model(
+            model_config   = self.model_config,
+            dataset_config = self.dataset_config,
+            plot_config    = self.plot_config
+        )
+        dataset = Dataset(
+            [
+                (Btumor4600().ID,    Btumor4600(),    []),  # id 0
+                (Btumor3000().ID,    Btumor3000(),    []),  # id 1
+                (Balzheimer5100().ID, Balzheimer5100(), []),# id 2
+                (Lpneumonia5200().ID, Lpneumonia5200(), []),# id 3
+            ],
+            dataset_config = self.dataset_config,
+            plot_config    = self.plot_config
+        )
+        federated = Federated(
+            dataset          = dataset,
+            model            = m,
+            federated_config = self.federated_config,
+            ood_config       = self.ood_config,
+            dataset_config   = self.dataset_config,
+            plot_config      = self.plot_config
+        )
+        return federated.run()
+
+
+class Experiment1Simulation():
+    """
+    3.4.1 Experiment 1: 1 OOD local model with complete poisoned dataset.
+    OOD detection DISABLED.
+
+    Setup:
+      - Global model (id=0): loads pre-trained weights, tests on all 4 ID datasets.
+      - Local model  (id=1): starts from global weights (load_reg=True),
+                             trains on complete Balzheimer5100_poisoned().
+    Run for 5 rounds and observe deterioration in global model accuracy.
+
+    IMPORTANT: Run PreTrainingSimulation first to generate saved weights.
+    """
+    LOAD_ROUND = 35          # Must match PreTrainingSimulation.ROUNDS
+    SAVE_PATH  = "./.env/.saved/"
+
+    federated_config = ConfigFederated(
+        debug          = True,
+        save           = False,
+        load_round     = LOAD_ROUND,
+        load_reg       = True,                       # Sync local from global after load
+        load           = True,                       # Load pre-trained global model
+        delete_on_load = False,
+        path           = SAVE_PATH,
+        rounds         = 5,
+        ood_round      = 6,                          # OOD never triggered
+        clients        = 2,                          # global(0) + 1 OOD local(1)
+        participants   = 1,
+        host_id        = 0,
+        client_to_dataset = [[0,1,2,3],[4]]          # global: all 4 ID sets; local: poisoned
+    )
+    ood_config = ConfigOod(
+        debug               = True,
+        hdc_debug           = False,
+        enabled             = False,                 # OOD detection DISABLED for Experiment 1
+        hyper_size          = int(1e4),
+        id_client           = [1],
+        ood_client          = [1],
+        ood_protection      = False,
+        ood_protection_thres= 0.7
+    )
+    model_config = ConfigModel(
+        debug          = True,
+        epochs         = 1,
+        activation     = 'relu',
+        activation_out = 'softmax',
+        optimizer      = 'adam',
+        loss           = 'categorical_crossentropy'
+    )
+    dataset_config = ConfigDataset(
+        debug           = False,
+        batch_size      = 64,
+        image_size      = 256,
+        input_shape     = (256,256,1),
+        split           = 0.25,
+        number_of_classes = 2
+    )
+    plot_config = ConfigPlot(plot=False, path='./.env/plot', img_per_class=10)
+
+    def run(self):
+        m = Model(
+            model_config   = self.model_config,
+            dataset_config = self.dataset_config,
+            plot_config    = self.plot_config
+        )
+        dataset = Dataset(
+            [
+                (Btumor4600().ID,    Btumor4600(),    []),               # id 0  (ID)
+                (Btumor3000().ID,    Btumor3000(),    []),               # id 1  (ID)
+                (Balzheimer5100().ID, Balzheimer5100(), []),             # id 2  (ID)
+                (Lpneumonia5200().ID, Lpneumonia5200(), []),             # id 3  (ID)
+                (Balzheimer5100_poisoned().ID, Balzheimer5100_poisoned(), []),  # id 4 (OOD — complete poisoned)
+            ],
+            dataset_config = self.dataset_config,
+            plot_config    = self.plot_config
+        )
+        federated = Federated(
+            dataset          = dataset,
+            model            = m,
+            federated_config = self.federated_config,
+            ood_config       = self.ood_config,
+            dataset_config   = self.dataset_config,
+            plot_config      = self.plot_config
+        )
+        return federated.run()
+
+
 if __name__ == "__main__":
-    sim1 = FederatedSimulation()
-    sim1.run()
+    # ── Step 1: Pre-train (run once, then comment out) ──────────────────────
+     sim_pretrain = PreTrainingSimulation()
+     sim_pretrain.run()
+
+    # ── Step 2: Experiment 1 — 1 OOD local model, OOD detection disabled ───
+    #sim_exp1 = Experiment1Simulation()
+    #sim_exp1.run()

@@ -53,10 +53,10 @@ class ConfigFederated():
         self.delete_on_load = delete_on_load
         self.path = path
         
-        if(0 <= load_round < rounds):
+        if(load_round >= 0):
             self.load_round = load_round
-        elif (load):
-            raise Exception(exception_msg, "Must load round less than sim. rounds.")
+        else:
+            raise Exception(exception_msg, "load_round must be >= 0") 
         
         if(clients >= 2):
             self.clients = clients
