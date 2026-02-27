@@ -15,7 +15,7 @@ class ModelPlot:
 
         # Plot training and validation accuracy
         plt.subplot(2, 3, 4)
-        plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
+        plt.gca().xaxis.set_major_locator(mticker.MaxNLocator(integer=True))
         plt.plot(x, train_accuracy, label='Training Accuracy', color='blue')
         plt.plot(x, val_accuracy, label='Validation Accuracy', color='orange')
         plt.xlabel(xlabel)
@@ -25,7 +25,7 @@ class ModelPlot:
 
         # Plot training and validation loss
         plt.subplot(2, 3, 5)
-        plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
+        plt.gca().xaxis.set_major_locator(mticker.MaxNLocator(integer=True))
         plt.plot(x, train_loss, label='Training Loss', color='blue')
         plt.plot(x, val_loss, label='Validation Loss', color='orange')
         plt.xlabel(xlabel)

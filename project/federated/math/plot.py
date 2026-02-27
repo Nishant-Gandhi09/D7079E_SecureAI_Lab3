@@ -24,12 +24,15 @@ class FederatedPlot:
         
     def plot_ood_dict(self, result : dict, federated_config : ConfigFederated, ood_config : ConfigOod, xlabel : str, title : str):
         plt.figure(num=title, figsize=(14, 5))
-        plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1)) 
-        for id in range(0, federated_config.clients): 
+        plt.gca().xaxis.set_major_locator(mticker.MaxNLocator(integer=True))
+        for id in range(0, federated_config.clients):
+            if id not in result:
+                continue
+            rounds_x = list(range(1, len(result[id]) + 1))
             if(id == federated_config.host_id):
-                plt.plot(result[id], label="Global model " + "(" + str(id) + ")")
+                plt.plot(rounds_x, result[id], label="Global model " + "(" + str(id) + ")")
             else:
-                plt.plot(result[id], label="Local model " + "(" + str(id) + ")")
+                plt.plot(rounds_x, result[id], label="Local model " + "(" + str(id) + ")")
 
         plt.xlabel(xlabel)
         plt.ylabel('Cosine (arg), Model vs. Global Model')
