@@ -30,6 +30,7 @@ class Federated():
         self.init_model = model            # This model can be
         self.federated_config = federated_config
         self.ood_config = ood_config
+        self.dataset_config = dataset_config
         self.plot_config = plot_config
         self.models = {}      # model_id: Model instance
         self.datasets = {}    # model_id: dataset iterator(s)
