@@ -866,17 +866,144 @@ class Experiment5Simulation():
         )
         return federated.run()
  
+class Experiment6Simulation():
+    """
+    3.4.6 (Bonus) Experiment 6: Dual-Vector Attack — two simultaneous OOD clients
+    with fundamentally different attack signatures.  OOD detection ENABLED.
+ 
+    Motivation
+    ----------
+    Experiment 5 revealed that domain-shift attacks (Afaces16000) evade HDFF
+    detection in 3 out of 5 rounds, while label-flip attacks (Balzheimer5100_
+    poisoned) are caught every round.  A realistic adversary aware of this
+    asymmetry might deploy BOTH attack types simultaneously:
+ 
+      1. One client uses a label-flip strategy (high gradient contradiction,
+        reliably detected) as a decoy or as a primary poisoning vector.
+      2. A second client uses a domain-shift strategy (coherent binary task,
+        intermittently evades detection) as a stealthy secondary vector.
+ 
+    This "dual-vector" attack tests two things:
+      1. Can HDFF correctly handle two OOD clients with very different cosine-
+         similarity profiles in the same round?
+      2. Does the stealthy domain-shift client (id=6) cause measurable global
+         model degradation when the reliable attacker (id=5) is always excluded?
+ 
+    Setup
+    -----
+      - Global model  (id=0): evaluates on all 4 ID datasets.
+      - Local model   (id=1): Btumor4600()          — ID
+      - Local model   (id=2): Btumor3000()           — ID
+      - Local model   (id=3): Balzheimer5100()       — ID
+      - Local model   (id=4): Lpneumonia5200()       — ID
+      - Local model   (id=5): Balzheimer5100_poisoned() — OOD (label-flip)
+      - Local model   (id=6): Afaces16000()          — OOD (domain-shift)
+ 
+    7 clients total; 6 local participants per round.
+ 
+    Expected outcome
+    ----------------
+      1. id=5 (label-flip): similarity << 0.7 every round → always excluded.
+      2. id=6 (domain-shift): similarity oscillates around 0.7 → partially evades.
+      3. Global accuracy lower than Exp 3/4 (both protected) but measurably
+         affected by id=6 slipping through on some rounds.
+      4. OOD graph shows two OOD lines with completely different profiles,
+         directly comparing the two attack detectability signatures side-by-side.
+ 
+    IMPORTANT: Run PreTrainingSimulation first to generate saved weights.
+    """
+    LOAD_ROUND = 35
+    SAVE_PATH  = "./.env/.saved/"
+ 
+    federated_config = ConfigFederated(
+        debug          = True,
+        save           = False,
+        load_round     = LOAD_ROUND,
+        load_reg       = True,
+        load           = True,
+        delete_on_load = False,
+        path           = SAVE_PATH,
+        rounds         = 5,
+        ood_round      = 1,                               # OOD detection active from round 1
+        clients        = 7,                               # global(0) + 4 ID + 2 OOD
+        participants   = 6,                               # all 6 local clients per round
+        host_id        = 0,
+        client_to_dataset = [[0,1,2,3],[0],[1],[2],[3],[4],[5]]
+        # global : all 4 ID datasets for evaluation
+        # local 1 → Btumor4600             (dataset idx 0)  ID
+        # local 2 → Btumor3000             (dataset idx 1)  ID
+        # local 3 → Balzheimer5100         (dataset idx 2)  ID
+        # local 4 → Lpneumonia5200         (dataset idx 3)  ID
+        # local 5 → Balzheimer5100_poisoned(dataset idx 4)  OOD — label-flip attack
+        # local 6 → Afaces16000            (dataset idx 5)  OOD — domain-shift attack
+    )
+    ood_config = ConfigOod(
+        debug               = True,
+        hdc_debug           = False,
+        enabled             = True,                       # OOD detection ENABLED
+        hyper_size          = int(1e4),
+        id_client           = [1, 2, 3, 4],               # Four clean local clients
+        ood_client          = [5, 6],                     # Both OOD clients
+        ood_protection      = True,                       # Exclude detected OOD clients
+        ood_protection_thres= 0.7                         # Cosine similarity threshold
+    )
+    model_config = ConfigModel(
+        debug          = True,
+        epochs         = 1,
+        activation     = 'relu',
+        activation_out = 'softmax',
+        optimizer      = 'adam',
+        loss           = 'categorical_crossentropy'
+    )
+    dataset_config = ConfigDataset(
+        debug           = False,
+        batch_size      = 64,
+        image_size      = 256,
+        input_shape     = (256,256,1),
+        split           = 0.25,
+        number_of_classes = 2
+    )
+    plot_config = ConfigPlot(plot=False, path='./.env/plot', img_per_class=10)
+ 
+    def run(self):
+        m = Model(
+            model_config   = self.model_config,
+            dataset_config = self.dataset_config,
+            plot_config    = self.plot_config
+        )
+        dataset = Dataset(
+            [
+                (Btumor4600().ID,             Btumor4600(),             []),  # idx 0 (ID)
+                (Btumor3000().ID,             Btumor3000(),             []),  # idx 1 (ID)
+                (Balzheimer5100().ID,         Balzheimer5100(),         []),  # idx 2 (ID)
+                (Lpneumonia5200().ID,         Lpneumonia5200(),         []),  # idx 3 (ID)
+                (Balzheimer5100_poisoned().ID, Balzheimer5100_poisoned(),[]),  # idx 4 (OOD: label-flip)
+                (Afaces16000().ID,            Afaces16000(),            []),  # idx 5 (OOD: domain-shift)
+            ],
+            dataset_config = self.dataset_config,
+            plot_config    = self.plot_config
+        )
+        federated = Federated(
+            dataset          = dataset,
+            model            = m,
+            federated_config = self.federated_config,
+            ood_config       = self.ood_config,
+            dataset_config   = self.dataset_config,
+            plot_config      = self.plot_config
+        )
+        return federated.run()
+ 
  
 if __name__ == "__main__":
-    # ── Step 1: Pre-train (run once, then comment out) ──
+    # ── Step 1: Pre-train (run once, then comment out) ──────────────────────
     # sim_pretrain = PreTrainingSimulation()
     # sim_pretrain.run()
  
-    # ── Step 2: Experiment 1 — 1 OOD local model, OOD detection disabled ──
+    # ── Step 2: Experiment 1 — 1 OOD local model, OOD detection disabled ───
     # sim_exp1 = Experiment1Simulation()
     # sim_exp1.run()
  
-    # ── Step 3: Experiment 2 — 1 OOD local model, OOD detection ENABLED ──
+    # ── Step 3: Experiment 2 — 1 OOD local model, OOD detection ENABLED ────
     # sim_exp2 = Experiment2Simulation()
     # sim_exp2.run()
  
@@ -889,5 +1016,9 @@ if __name__ == "__main__":
     # sim_exp4.run()
  
     # ── Step 6: Experiment 5 — 4 ID locals + 1 TRUE OOD local (Afaces16000), OOD detection ENABLED ─
-    sim_exp5 = Experiment5Simulation()
-    sim_exp5.run()
+    # sim_exp5 = Experiment5Simulation()
+    # sim_exp5.run()
+ 
+    # ── Step 7: Experiment 6 (Bonus) — 4 ID locals + 2 OOD locals (dual-vector attack) ─
+    sim_exp6 = Experiment6Simulation()
+    sim_exp6.run() 
