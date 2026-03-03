@@ -124,15 +124,6 @@ class ModelSimulation():
         input('Press Enter to close plots and exit...')
         
 class FederatedSimulation():
-    """
-        TODO:
-        Simulation for federated learning with multiple local models.
-        You are free to change the configuration as you like, remove or edit.
-        
-        This are only some parameters for simulation that might be of interest.
-        
-        You may remove the configuration entirely if you prefer and apply an alternative setup.
-    """
     #--------------------------------------- 
     #--------------CONFIG-------------------
     #--------------------------------------- 
