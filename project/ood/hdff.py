@@ -197,7 +197,9 @@ class Hdff():
         """ Create projection matrix.
         """
         self.proj = []
-        initializer = tf.initializers.Orthogonal()
+        #We used GlorotUniform function as it is the default weight initializer for Keras and can have better effect on HDFF results and for projected vectors but can also switch to Orthogonal()
+        #initializer = tf.initializers.Orthogonal()
+        initializer = tf.initializers.GlorotUniform()
         for feature in self.features:
             # Determine channel dimension
             if len(feature.shape) == 4:   # (batch, H, W, C)
