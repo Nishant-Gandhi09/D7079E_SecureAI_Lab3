@@ -197,7 +197,7 @@ class Hdff():
         """ Create projection matrix.
         """
         self.proj = []
-        initializer = tf.initializers.GlorotUniform()
+        initializer = tf.initializers.Orthogonal()
         for feature in self.features:
             # Determine channel dimension
             if len(feature.shape) == 4:   # (batch, H, W, C)
