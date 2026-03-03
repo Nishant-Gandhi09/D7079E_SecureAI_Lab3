@@ -80,69 +80,6 @@ class Federated():
         # 7. Plot and save results after all rounds
         self.result()
  
-    def train_(self, start : int):
-        # For training, this will be the functionality flow. However you need to implement them.
- 
-        for round in range(1+start, self.federated_config.rounds+1):
-            part = max(int(self.federated_config.participants), 1)                 # Alteast one client will partcipate in round.
-            selected_clients = random.sample(None, part)                           # TODO Select random clients that will participate during training round.
- 
-            while self.federated_config.host_id in selected_clients:               # If global model gets selected as participant, select new.
-                selected_clients = random.sample(None, part)
- 
-            # This is for ood, if ood is enabled and round is less than ood_round, remove clients that are in ood_client list.
-            # Can be good to let the models train for 2 rounds before ood, to get a better model.
-            # Some warmup of model before ood and ood client included.
-            if(self.ood_config.enabled and round < self.federated_config.ood_round):
-                for i in self.ood_config.ood_client:
-                    selected_clients.remove(i)
- 
-            self.global_(self.federated_config.host_id, round)                     # Update all local models with global model.
- 
-            for id in selected_clients:                                            # Train all local models.
-                self.local_(id, round)
- 
-            self.update_(selected_clients, round)
- 
-        return round
- 
-    def test_(self):
-        # TODO
-        return None
- 
-    def global_(self, id : int, round : int):                                            # Update all local models with global model weights.
-        """
-            Updates local models with global model weights.
-        Args:
-            id (int): id for global model.
-        """
-        # TODO
-        return None
- 
-    def local_(self, id : int, round : int):                                         # Train local models
-        """
-            Trains local models, with id.
-        Args:
-            id (int): id for local model.
-            round (int): current round.
-        """
-        # TODO
-        return None
- 
-    def update_(self, selected_clients, round : int):
-        """
-            Update global model with clients that was training during round (selected clients).
- 
-            Incorporate ood detection if enabled in config. Select only clients that are not detected as ood.
-        Args:
-            selected_clients (list): list with id of clients (local models) that selected for training.
-            round (int): current round.
-        """
-        # TODO
- 
-        return None
- 
- 
     def ood_extraction(self, id : int, model : Model):
         """ Extract features from model using HDFF and return the Hdff object
             (features populated, ready for projection_matrices or set_projection_matrices).
